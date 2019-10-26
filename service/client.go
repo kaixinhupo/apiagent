@@ -6,7 +6,6 @@ import (
 	"github.com/axgle/mahonia"
 	"github.com/hoisie/mustache"
 	config2 "github.com/kaixinhupo/apiagent/config"
-
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -21,7 +20,7 @@ type HttpClient struct {
 	IsLogin bool
 }
 
-var defaultClient *HttpClient = nil;
+var defaultClient *HttpClient = nil
 
 var clientMutex = new(sync.Mutex)
 
@@ -33,7 +32,7 @@ func DefaultClient() *HttpClient {
 		}
 		clientMutex.Unlock()
 	}
-	return defaultClient;
+	return defaultClient
 }
 
 func (h *HttpClient) Login() {
@@ -44,7 +43,7 @@ func (h *HttpClient) Login() {
 	task := config.GetTaskByName("login")
 	_, err := h.RunTask(task)
 	if err != nil {
-		h.IsLogin = false;
+		h.IsLogin = false
 	}
 }
 
@@ -117,16 +116,16 @@ func parsePost(step *config2.Step, context map[string]string) *http.Request {
 	log.Println("url:", urlStr)
 	formBody := buildBody(step, context)
 	request, _ := http.NewRequest(http.MethodPost, urlStr, strings.NewReader(formBody))
-	return request;
+	return request
 }
 
 func buildBody(step *config2.Step, context map[string]string) string {
 	templatePath := step.Input.TemplatePath
 	var mimeType string
 	if ct, ok := step.Input.Headers["Content-Type"]; ok {
-		mimeType = ct;
+		mimeType = ct
 	} else if ct, ok := step.Input.Headers["content-type"]; ok {
-		mimeType = ct;
+		mimeType = ct
 	} else if templatePath != "" {
 		mimeType = "application/json"
 	} else {
@@ -140,7 +139,7 @@ func buildBody(step *config2.Step, context map[string]string) string {
 			if strings.Contains(mimeType, "json") {
 				json := gabs.New()
 				for _, v := range params {
-					var val string;
+					var val string
 					if v.IsConst {
 						val = v.Value
 					} else {
@@ -160,7 +159,7 @@ func buildBody(step *config2.Step, context map[string]string) string {
 }
 
 func EncodeStr(input string, encoding string) string {
-	return input;
+	return input
 }
 
 func renderTemplate(path string, params []*config2.Param, context map[string]string) string {
@@ -183,7 +182,7 @@ func mergeContext(params []*config2.Param, context map[string]string) map[string
 		result[k] = v
 	}
 	for _, v := range params {
-		var val string;
+		var val string
 		if v.IsConst {
 			val = v.Value
 		} else {
@@ -217,7 +216,7 @@ func parseGet(step *config2.Step, context map[string]string) *http.Request {
 func buildFormStr(encoding string, params []*config2.Param, context map[string]string) string {
 	builder := strings.Builder{}
 	for _, v := range params {
-		var val string;
+		var val string
 		if v.IsConst {
 			val = v.Value
 		} else {
