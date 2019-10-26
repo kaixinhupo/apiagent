@@ -1,0 +1,62 @@
+{
+  "Port": 9001,
+  "AesKey": "12345678",
+  "Arguments": [{
+    "Key": "username",
+    "Value": "admin"
+  },
+    {
+      "Key": "password",
+      "Value": "123456"
+    }
+  ],
+  "Tasks": [{
+    "Name": "login",
+    "Steps": [{
+      "Sort": 0,
+      "Input": {
+        "Url": "http://www.baidu.com",
+        "Method": "get",
+        "Params": [{
+          "Key": "q",
+          "Value": "hello",
+          "IsConst": true
+        }],
+        "Encoding": "utf-8"
+      },
+      "Output": {
+        "Extract": true,
+        "Encoding": "utf-8",
+        "ItemRules": [{
+          "Type": "XPATH",
+          "Expr": "",
+          "Key": "Title"
+        }]
+      }
+    }]
+  },{
+    "Name": "list",
+    "Steps": [{
+      "Sort": 0,
+      "Input": {
+        "Url": "http://gank.io/",
+        "Method": "get",
+        "Encoding": "utf-8"
+      },
+      "Output": {
+        "Extract": true,
+        "Encoding": "utf-8",
+        "CollectionRule": [{
+          "Type": "css",
+          "Expr": "div.row.card",
+          "Key": "list",
+          "ItemRules": [{
+            "Type": "XPATH",
+            "Expr": "",
+            "Key": "Title"
+          }]
+        }]
+      }
+    }]
+  }]
+}
