@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/kaixinhupo/apiagent/config"
-	"github.com/kaixinhupo/apiagent/service"
+	http2 "github.com/kaixinhupo/apiagent/http"
+	"github.com/kaixinhupo/apiagent/server"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -15,7 +16,7 @@ import (
 )
 
 var (
-	client = service.DefaultClient()
+	client = http2.DefaultClient()
 )
 
 func main() {
@@ -47,7 +48,7 @@ func main() {
 
 func startHttp(config *config.Config) {
 	mux := http.NewServeMux()
-	mux.Handle("/", &service.HttpHandler{})
+	mux.Handle("/", &server.HttpHandler{})
 	log.Println("启动服务,端口:", config.Port)
 	err := http.ListenAndServe(fmt.Sprintf(":%d", config.Port), mux)
 	if err != nil {
@@ -67,7 +68,7 @@ func main2() {
 	html := string(data)
 	doc, _ := goquery.NewDocumentFromReader(strings.NewReader(html))
 	doc.Find("div.row.card").Each(func(i int, selection *goquery.Selection) {
-		fmt.Println("--------------------",i,"-------------------------")
+		fmt.Println("--------------------", i, "-------------------------")
 		fmt.Println(selection.Text())
 	})
 }

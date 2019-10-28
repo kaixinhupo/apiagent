@@ -1,11 +1,12 @@
-package service
+package http
 
 import (
 	"errors"
 	"github.com/Jeffail/gabs/v2"
 	"github.com/axgle/mahonia"
 	"github.com/hoisie/mustache"
-	config2 "github.com/kaixinhupo/apiagent/config"
+	cfg "github.com/kaixinhupo/apiagent/config"
+	"github.com/kaixinhupo/apiagent/parser"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -39,7 +40,7 @@ func (h *HttpClient) Login() {
 	if h.IsLogin {
 		return
 	}
-	config, _ := config2.DefaultConfig()
+	config, _ := cfg.DefaultConfig()
 	task := config.GetTaskByName("login")
 	_, err := h.RunTask(task)
 	if err != nil {
@@ -47,7 +48,7 @@ func (h *HttpClient) Login() {
 	}
 }
 
-func (h *HttpClient) RunTask(task *config2.Task) (*map[string]string, error) {
+func (h *HttpClient) RunTask(task *cfg.Task) (*map[string]string, error) {
 	if task == nil {
 		return nil, errors.New("Task does not exist")
 	}
@@ -65,7 +66,7 @@ func (h *HttpClient) RunTask(task *config2.Task) (*map[string]string, error) {
 	return &result, nil
 }
 
-func (h *HttpClient) RunStep(step *config2.Step, context map[string]string) (map[string]interface{}, error) {
+func (h *HttpClient) RunStep(step *cfg.Step, context map[string]string) (map[string]interface{}, error) {
 	method := strings.ToLower(step.Input.Method)
 	if method == "" {
 		method = "get"
@@ -94,7 +95,7 @@ func (h *HttpClient) RunStep(step *config2.Step, context map[string]string) (map
 	if err != nil {
 		return nil, err
 	}
-	return ParseStepResult(step, body)
+	return parser.ParseStepResult(step, body)
 }
 
 func parseBody(data []byte, encoding string) (string, error) {
@@ -111,7 +112,7 @@ func parseBody(data []byte, encoding string) (string, error) {
 	return body, nil
 }
 
-func parsePost(step *config2.Step, context map[string]string) *http.Request {
+func parsePost(step *cfg.Step, context map[string]string) *http.Request {
 	urlStr := buildUrl(step, context)
 	log.Println("url:", urlStr)
 	formBody := buildBody(step, context)
@@ -119,7 +120,7 @@ func parsePost(step *config2.Step, context map[string]string) *http.Request {
 	return request
 }
 
-func buildBody(step *config2.Step, context map[string]string) string {
+func buildBody(step *cfg.Step, context map[string]string) string {
 	templatePath := step.Input.TemplatePath
 	var mimeType string
 	if ct, ok := step.Input.Headers["Content-Type"]; ok {
@@ -162,8 +163,8 @@ func EncodeStr(input string, encoding string) string {
 	return input
 }
 
-func renderTemplate(path string, params []*config2.Param, context map[string]string) string {
-	appPath, _ := config2.AppPath()
+func renderTemplate(path string, params []*cfg.Param, context map[string]string) string {
+	appPath, _ := cfg.AppPath()
 	templatePath := filepath.Join(appPath, "config", "templates", path)
 	templateFile, err := os.Open(templatePath)
 	if err != nil {
@@ -176,7 +177,7 @@ func renderTemplate(path string, params []*config2.Param, context map[string]str
 	return mustache.Render(string(data), _context)
 }
 
-func mergeContext(params []*config2.Param, context map[string]string) map[string]string {
+func mergeContext(params []*cfg.Param, context map[string]string) map[string]string {
 	result := make(map[string]string, len(params)+len(context))
 	for k, v := range context {
 		result[k] = v
@@ -195,7 +196,7 @@ func mergeContext(params []*config2.Param, context map[string]string) map[string
 	return result
 }
 
-func parseGet(step *config2.Step, context map[string]string) *http.Request {
+func parseGet(step *cfg.Step, context map[string]string) *http.Request {
 	urlStr := buildUrl(step, context)
 	log.Println(urlStr)
 	params := step.Input.Params
@@ -213,7 +214,7 @@ func parseGet(step *config2.Step, context map[string]string) *http.Request {
 	return request
 }
 
-func buildFormStr(encoding string, params []*config2.Param, context map[string]string) string {
+func buildFormStr(encoding string, params []*cfg.Param, context map[string]string) string {
 	builder := strings.Builder{}
 	for _, v := range params {
 		var val string
@@ -231,7 +232,7 @@ func buildFormStr(encoding string, params []*config2.Param, context map[string]s
 	return builder.String()
 }
 
-func buildUrl(step *config2.Step, context map[string]string) string {
+func buildUrl(step *cfg.Step, context map[string]string) string {
 	urlStr := step.Input.Url
 	if step.Input.UrlParams != nil {
 		for k, v := range step.Input.UrlParams {

@@ -1,4 +1,4 @@
-package service
+package parser
 
 import (
 	config2 "github.com/kaixinhupo/apiagent/config"
@@ -40,7 +40,7 @@ func ParseStepResult(step *config2.Step, body string) (map[string]interface{}, e
 			}
 			group, err := collectionByRule(v, context)
 			if err != nil {
-				break;
+				break
 			}
 			if group != nil {
 				arr := make([]map[string]interface{}, len(group))

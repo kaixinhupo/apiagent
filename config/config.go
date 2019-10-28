@@ -88,6 +88,7 @@ type Task struct {
 type Config struct {
 	Port      int             //端口号
 	AesKey    string          //加密Key
+	CheckData string          //校验数据
 	Arguments []*KeyValuePair //预设参数
 	Tasks     []*Task         //任务列表
 }
@@ -95,14 +96,14 @@ type Config struct {
 // 获取指定名称的Task
 func (c *Config) GetTaskByName(name string) *Task {
 	if c.Tasks == nil || len(c.Tasks) == 0 {
-		return nil;
+		return nil
 	}
 	for _, t := range c.Tasks {
 		if t.Name == name {
-			return t;
+			return t
 		}
 	}
-	return nil;
+	return nil
 }
 
 // 对Step进行排序
@@ -136,7 +137,7 @@ func DefaultConfig() (*Config, error) {
 		}
 		clientMutex.Unlock()
 	}
-	return defaultConfig, nil;
+	return defaultConfig, nil
 }
 
 func readApplicationConfig() (*Config, error) {
@@ -144,7 +145,7 @@ func readApplicationConfig() (*Config, error) {
 	if err1 != nil {
 		return nil, err1
 	}
-	configJson := path.Join(config, "config.json");
+	configJson := path.Join(config, "config.json")
 	if !pathExists(configJson) {
 		return nil, errors.New("错误的应用程序路径")
 	}

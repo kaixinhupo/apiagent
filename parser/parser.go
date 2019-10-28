@@ -1,4 +1,4 @@
-package service
+package parser
 
 import (
 	"github.com/Jeffail/gabs/v2"
@@ -25,7 +25,7 @@ func (p *OutputParser) ValueByJson(path string) (string, error) {
 		return "", errors2.NewContextError("创建上下文时发生异常")
 	}
 	if val, ok := ctx.Path(path).Data().(string); ok {
-		return val, nil;
+		return val, nil
 	}
 	return "", nil
 }
@@ -56,7 +56,7 @@ func (p *OutputParser) ValueByCss(selector string) (string, error) {
 	if ctx == nil {
 		return "", errors2.NewContextError("创建上下文时发生异常")
 	}
-	return ctx.Find(selector).Text(), nil;
+	return ctx.Find(selector).Text(), nil
 }
 
 func (p *OutputParser) ValueByCssWithRegex(selector string, regex string) (string, error) {
@@ -92,7 +92,7 @@ func (p *OutputParser) SliceByJson(path string) ([]string, error) {
 			rst[i] = val
 		}
 	}
-	return rst, nil;
+	return rst, nil
 }
 
 func (p *OutputParser) SliceByCss(selector string) ([]string, error) {
@@ -111,7 +111,7 @@ func (p *OutputParser) SliceByCss(selector string) ([]string, error) {
 		html, _ := sel.Html()
 		rst[i] = html
 	})
-	return rst, nil;
+	return rst, nil
 }
 
 func (p *OutputParser) getHtmlContext() *goquery.Document {
@@ -122,7 +122,7 @@ func (p *OutputParser) getHtmlContext() *goquery.Document {
 		ctx, err := goquery.NewDocumentFromReader(strings.NewReader(p.Body))
 		if err != nil {
 			log.Println("创建HtmlContext时发生错误:", err)
-			return nil;
+			return nil
 		}
 		p.htmlContext = ctx
 	}
@@ -137,7 +137,7 @@ func (p *OutputParser) getJsonContext() *gabs.Container {
 		ctx, err := gabs.ParseJSON([]byte(p.Body))
 		if err != nil {
 			log.Println("创建JsonContext时发生错误:", err)
-			return nil;
+			return nil
 		}
 		p.jsonContext = ctx
 	}
