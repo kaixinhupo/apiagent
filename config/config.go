@@ -69,6 +69,7 @@ type Res struct {
 	Encoding        string            //编码方式
 	ItemRules       []*ItemRule       //单条规则
 	CollectionRules []*CollectionRule //集合规则
+	Check           *Param            //校验规则
 }
 
 // 步骤

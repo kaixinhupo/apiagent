@@ -6,6 +6,7 @@ import (
 	"github.com/axgle/mahonia"
 	"github.com/hoisie/mustache"
 	cfg "github.com/kaixinhupo/apiagent/config"
+	errors2 "github.com/kaixinhupo/apiagent/errors"
 	"github.com/kaixinhupo/apiagent/parser"
 	"io/ioutil"
 	"log"
@@ -48,25 +49,62 @@ func (h *HttpClient) Login() {
 	}
 }
 
-func (h *HttpClient) RunTask(task *cfg.Task) (*map[string]string, error) {
+func (h *HttpClient) RunTask(task *cfg.Task) (map[string]interface{}, error) {
 	if task == nil {
 		return nil, errors.New("Task does not exist")
 	}
 	if task.Steps == nil || len(task.Steps) == 0 {
 		return nil, errors.New("Task does not contain any steps")
 	}
-	result := make(map[string]string)
+	result := make(map[string]interface{})
+	context := make(map[string]string)
+
+	config, _ := cfg.DefaultConfig()
+	if config.Arguments != nil {
+		for _, p := range config.Arguments {
+			context[p.Key] = p.Value
+		}
+	}
+
 	for _, s := range task.Steps {
-		body, err := h.RunStep(s, result)
+		body, err := h.RunStep(s, &context)
 		if err != nil {
 			return nil, err
 		}
-		log.Println(body)
+
+		if body != nil {
+			check := s.Output.Check
+			if check != nil {
+				var chkVal string
+				if !check.IsConst {
+					if _v, ok := context[check.Key]; ok {
+						chkVal = _v
+					}
+				} else {
+					chkVal = check.Value
+				}
+
+				if v, ok := body[check.Key]; ok {
+					if v != chkVal {
+						return nil, errors2.NewCheckError("校验不通过")
+					}
+				} else {
+					return nil, errors2.NewCheckError("校验不通过")
+				}
+			}
+
+			for k, v := range body {
+				if str, ok := v.(string); ok {
+					context[k] = str
+				}
+				result[k] = v
+			}
+		}
 	}
-	return &result, nil
+	return result, nil
 }
 
-func (h *HttpClient) RunStep(step *cfg.Step, context map[string]string) (map[string]interface{}, error) {
+func (h *HttpClient) RunStep(step *cfg.Step, context *map[string]string) (map[string]interface{}, error) {
 	method := strings.ToLower(step.Input.Method)
 	if method == "" {
 		method = "get"
@@ -112,7 +150,7 @@ func parseBody(data []byte, encoding string) (string, error) {
 	return body, nil
 }
 
-func parsePost(step *cfg.Step, context map[string]string) *http.Request {
+func parsePost(step *cfg.Step, context *map[string]string) *http.Request {
 	urlStr := buildUrl(step, context)
 	log.Println("url:", urlStr)
 	formBody := buildBody(step, context)
@@ -120,7 +158,7 @@ func parsePost(step *cfg.Step, context map[string]string) *http.Request {
 	return request
 }
 
-func buildBody(step *cfg.Step, context map[string]string) string {
+func buildBody(step *cfg.Step, context *map[string]string) string {
 	templatePath := step.Input.TemplatePath
 	var mimeType string
 	if ct, ok := step.Input.Headers["Content-Type"]; ok {
@@ -144,7 +182,7 @@ func buildBody(step *cfg.Step, context map[string]string) string {
 					if v.IsConst {
 						val = v.Value
 					} else {
-						if value, ok := context[v.Value]; ok {
+						if value, ok := (*context)[v.Value]; ok {
 							val = value
 						}
 					}
@@ -163,7 +201,8 @@ func EncodeStr(input string, encoding string) string {
 	return input
 }
 
-func renderTemplate(path string, params []*cfg.Param, context map[string]string) string {
+func renderTemplate(path string, params []*cfg.Param, context *map[string]string) string {
+
 	appPath, _ := cfg.AppPath()
 	templatePath := filepath.Join(appPath, "config", "templates", path)
 	templateFile, err := os.Open(templatePath)
@@ -177,7 +216,8 @@ func renderTemplate(path string, params []*cfg.Param, context map[string]string)
 	return mustache.Render(string(data), _context)
 }
 
-func mergeContext(params []*cfg.Param, context map[string]string) map[string]string {
+func mergeContext(params []*cfg.Param, ctx *map[string]string) map[string]string {
+	context := *ctx
 	result := make(map[string]string, len(params)+len(context))
 	for k, v := range context {
 		result[k] = v
@@ -196,7 +236,7 @@ func mergeContext(params []*cfg.Param, context map[string]string) map[string]str
 	return result
 }
 
-func parseGet(step *cfg.Step, context map[string]string) *http.Request {
+func parseGet(step *cfg.Step, context *map[string]string) *http.Request {
 	urlStr := buildUrl(step, context)
 	log.Println(urlStr)
 	params := step.Input.Params
@@ -214,14 +254,14 @@ func parseGet(step *cfg.Step, context map[string]string) *http.Request {
 	return request
 }
 
-func buildFormStr(encoding string, params []*cfg.Param, context map[string]string) string {
+func buildFormStr(encoding string, params []*cfg.Param, context *map[string]string) string {
 	builder := strings.Builder{}
 	for _, v := range params {
 		var val string
 		if v.IsConst {
 			val = v.Value
 		} else {
-			if value, ok := context[v.Value]; ok {
+			if value, ok := (*context)[v.Value]; ok {
 				val = value
 			}
 		}
@@ -232,11 +272,11 @@ func buildFormStr(encoding string, params []*cfg.Param, context map[string]strin
 	return builder.String()
 }
 
-func buildUrl(step *cfg.Step, context map[string]string) string {
+func buildUrl(step *cfg.Step, context *map[string]string) string {
 	urlStr := step.Input.Url
 	if step.Input.UrlParams != nil {
 		for k, v := range step.Input.UrlParams {
-			if val, ok := context[v]; ok {
+			if val, ok := (*context)[v]; ok {
 				urlStr = strings.ReplaceAll(urlStr, k, val)
 			}
 		}

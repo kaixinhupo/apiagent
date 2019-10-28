@@ -71,6 +71,11 @@
                 ]
               }
             ]
+          },
+          "Check": {
+            "Key": "username",
+            "Value": "username",
+            "IsConst": false
           }
         }
       ]
